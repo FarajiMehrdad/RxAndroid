@@ -7,9 +7,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 
 import ir.approom.test.R;
+import ir.approom.test.ToDoCompleteChangeListener;
 import ir.approom.test.ToDoListListener;
+import ir.approom.test.model.ToDo;
 import ir.approom.test.model.ToDoList;
 
 /**
@@ -21,10 +24,17 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
     private ToDoList mToDoList;
     private Context mContext;
 
-    public ToDoAdapter(ToDoList toDos , Context context){
-        this.mToDoList = toDos;
-        this.mContext = context;
 
+    // user can interact with  checkbox and change the completeion of toDoItem
+    // So we should tell to dataModel that item change.
+    private ToDoCompleteChangeListener toDoCompleteChangeListener;
+
+    // how inject ToDolist to adapter?!
+    // how inject Context to adapter? or only  inject LayoutInflater is better than inject context?!
+    public ToDoAdapter( Context context , ToDoCompleteChangeListener changeListener){
+        this.mToDoList = new ToDoList();
+        this.mContext = context;
+        this.toDoCompleteChangeListener = changeListener;
     }
 
     @Override
@@ -37,10 +47,22 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
     }
 
     @Override
-    public void onBindViewHolder(ToDoViewHolder holder, int position) {
+    public void onBindViewHolder(ToDoViewHolder holder, final int position) {
 
-        holder.checkBox.setChecked(mToDoList.get(position).isCompleted());
-        holder.checkBox.setText(mToDoList.get(position).getTitle());
+        final ToDo toDo = mToDoList.get(position);
+        holder.checkBox.setText(toDo.getTitle());
+        holder.checkBox.setOnCheckedChangeListener(null);
+        holder.checkBox.setChecked(toDo.isCompleted());
+        holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+
+                Log.d("Adapter" , "task changed and is " + b);
+                if (toDoCompleteChangeListener != null) {
+                    toDoCompleteChangeListener.OnToDoCompletedChanged(toDo);
+                }
+            }
+        });
     }
 
     @Override

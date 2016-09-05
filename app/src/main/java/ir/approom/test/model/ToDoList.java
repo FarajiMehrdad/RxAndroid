@@ -19,6 +19,10 @@ public class ToDoList {
         fillList();
     }
 
+    public ToDoList(Boolean init){
+        this.toDoList = new ArrayList<>();
+    }
+
     public void setListener(ToDoListListener listener) {
 
         this.toDoListListener = listener;
@@ -35,6 +39,13 @@ public class ToDoList {
             toDoListListener.onToDoListChanged(this);
         }
 
+    }
+
+    public void remove(ToDo toDo){
+        this.toDoList.remove(toDo);
+        if (toDoListListener != null){
+            toDoListListener.onToDoListChanged(this);
+        }
     }
 
     public ToDo get(int position) {
@@ -65,6 +76,17 @@ public class ToDoList {
     }
 
 
+    public List<ToDo> getToDoList() {
+        return toDoList;
+    }
+
+    public void toggle(ToDo toDo) {
+        this.toDoList.get(toDoList.indexOf(toDo))
+                .setCompleted(!toDo.isCompleted());
+        if (toDoListListener != null){
+            toDoListListener.onToDoListChanged(this);
+        }
+    }
 }
 
 
