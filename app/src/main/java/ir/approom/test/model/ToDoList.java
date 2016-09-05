@@ -3,15 +3,18 @@ package ir.approom.test.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import ir.approom.test.ToDoListListener;
+import rx.Observable;
+import rx.functions.Action1;
+import rx.subjects.ReplaySubject;
 
 /**
  * Created by Mehrdad on 9/4/16.
  */
-public class ToDoList {
+public class ToDoList implements Action1<ToDo>{
 
     private List<ToDo> toDoList;
-    private ToDoListListener toDoListListener;
+    private ReplaySubject<ToDoList> notifier = ReplaySubject.create();
+
 
     public ToDoList() {
 
@@ -19,34 +22,62 @@ public class ToDoList {
         fillList();
     }
 
-    public ToDoList(Boolean init){
-        this.toDoList = new ArrayList<>();
-    }
-
-    public void setListener(ToDoListListener listener) {
-
-        this.toDoListListener = listener;
-    }
-
-    public ToDoList(ArrayList<ToDo> toDos) {
-        this.toDoList = toDos;
-    }
 
     public void add(ToDo toDo) {
 
         this.toDoList.add(toDo);
-        if (toDoListListener !=null){
-            toDoListListener.onToDoListChanged(this);
-        }
+        notifier.onNext(this);
 
     }
 
-    public void remove(ToDo toDo){
+    public void remove(ToDo toDo) {
         this.toDoList.remove(toDo);
-        if (toDoListListener != null){
-            toDoListListener.onToDoListChanged(this);
-        }
+
     }
+
+    private void toggle(ToDo toDo) {
+        this.toDoList.get(toDoList.indexOf(toDo))
+                .setCompleted(!toDo.isCompleted());
+        notifier.onNext(this);
+
+    }
+
+
+    public Observable<ToDoList> asObservable(){
+        return notifier;
+    }
+
+
+    public List<ToDo> getAllToDoList() {
+        return toDoList;
+    }
+
+    public List<ToDo> getIncompleteTask(){
+
+        List<ToDo> inCompleteList = new ArrayList<>();
+        for (ToDo todo : toDoList) {
+            if (!todo.isCompleted()){
+                inCompleteList.add(todo);
+            }
+        }
+        return inCompleteList;
+    }
+
+    public List<ToDo> getcompleteTask(){
+
+        List<ToDo> completeList = new ArrayList<>();
+        for (ToDo todo : toDoList) {
+            if (todo.isCompleted()){
+                completeList.add(todo);
+            }
+        }
+        return completeList;
+    }
+
+
+
+
+
 
     public ToDo get(int position) {
         return this.toDoList.get(position);
@@ -72,20 +103,14 @@ public class ToDoList {
         toDoList.add(toDo3);
         toDoList.add(toDo4);
         toDoList.add(toDo5);
+        notifier.onNext(this);
 
     }
 
 
-    public List<ToDo> getToDoList() {
-        return toDoList;
-    }
-
-    public void toggle(ToDo toDo) {
-        this.toDoList.get(toDoList.indexOf(toDo))
-                .setCompleted(!toDo.isCompleted());
-        if (toDoListListener != null){
-            toDoListListener.onToDoListChanged(this);
-        }
+    @Override
+    public void call(ToDo toDo) {
+        toggle(toDo);
     }
 }
 

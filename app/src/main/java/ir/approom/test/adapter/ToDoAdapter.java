@@ -7,41 +7,45 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
+
+import com.jakewharton.rxbinding.widget.RxCompoundButton;
+
+import java.util.Collections;
+import java.util.List;
 
 import ir.approom.test.R;
-import ir.approom.test.ToDoCompleteChangeListener;
-import ir.approom.test.ToDoListListener;
 import ir.approom.test.model.ToDo;
-import ir.approom.test.model.ToDoList;
+import rx.Subscription;
+import rx.functions.Action1;
+import rx.functions.Func1;
 
 /**
  * Created by Mehrdad on 9/4/16.
  */
-public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder> implements ToDoListListener{
+public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder> implements Action1<List<ToDo>> {
 
 
-    private ToDoList mToDoList;
+    private List<ToDo> mToDoList;
     private Context mContext;
 
 
     // user can interact with  checkbox and change the completeion of toDoItem
     // So we should tell to dataModel that item change.
-    private ToDoCompleteChangeListener toDoCompleteChangeListener;
+    private Action1<ToDo> subscriber;
 
     // how inject ToDolist to adapter?!
     // how inject Context to adapter? or only  inject LayoutInflater is better than inject context?!
-    public ToDoAdapter( Context context , ToDoCompleteChangeListener changeListener){
-        this.mToDoList = new ToDoList();
+    public ToDoAdapter(Context context, Action1<ToDo> subscriber) {
+        this.mToDoList = Collections.emptyList();
         this.mContext = context;
-        this.toDoCompleteChangeListener = changeListener;
+        this.subscriber = subscriber;
     }
 
     @Override
     public ToDoViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
-        Log.d("Adapter" , "onCreateViewHolder called");
-        View rootView = LayoutInflater.from(mContext).inflate(R.layout.to_do_item,parent, false);
+        Log.d("Adapter", "onCreateViewHolder called");
+        View rootView = LayoutInflater.from(mContext).inflate(R.layout.to_do_item, parent, false);
         ToDoViewHolder viewHolder = new ToDoViewHolder(rootView);
         return viewHolder;
     }
@@ -51,18 +55,16 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
 
         final ToDo toDo = mToDoList.get(position);
         holder.checkBox.setText(toDo.getTitle());
-        holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(toDo.isCompleted());
-        holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
 
-                Log.d("Adapter" , "task changed and is " + b);
-                if (toDoCompleteChangeListener != null) {
-                    toDoCompleteChangeListener.OnToDoCompletedChanged(toDo);
-                }
-            }
-        });
+        holder.subscription = RxCompoundButton.checkedChanges(holder.checkBox).skip(1).
+                map(new Func1<Boolean, ToDo>() {
+                    @Override
+                    public ToDo call(Boolean aBoolean) {
+                        return toDo;
+                    }
+                }).subscribe(subscriber);
+
     }
 
     @Override
@@ -70,16 +72,18 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
         return this.mToDoList.size();
     }
 
+
     @Override
-    public void onToDoListChanged(ToDoList updateList) {
-        this.mToDoList = updateList;
-        Log.d("Adapter" , "onToDoListChanged called");
+    public void call(List<ToDo> toDos) {
+        this.mToDoList = toDos;
+        Log.d("Adapter", "onToDoListChanged called");
         notifyDataSetChanged();
     }
 
-    static class ToDoViewHolder extends RecyclerView.ViewHolder{
+    static class ToDoViewHolder extends RecyclerView.ViewHolder {
 
         CheckBox checkBox;
+        Subscription subscription;
 
         public ToDoViewHolder(View itemView) {
             super(itemView);
@@ -88,4 +92,10 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
         }
     }
 
+
+    @Override
+    public void onViewDetachedFromWindow(ToDoViewHolder holder) {
+        super.onViewDetachedFromWindow(holder);
+        holder.subscription.unsubscribe();
+    }
 }
