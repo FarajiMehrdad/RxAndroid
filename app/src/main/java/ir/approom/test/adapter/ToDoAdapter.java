@@ -17,7 +17,6 @@ import ir.approom.test.R;
 import ir.approom.test.model.ToDo;
 import rx.Subscription;
 import rx.functions.Action1;
-import rx.functions.Func1;
 
 /**
  * Created by Mehrdad on 9/4/16.
@@ -58,12 +57,8 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ToDoViewHolder
         holder.checkBox.setChecked(toDo.isCompleted());
 
         holder.subscription = RxCompoundButton.checkedChanges(holder.checkBox).skip(1).
-                map(new Func1<Boolean, ToDo>() {
-                    @Override
-                    public ToDo call(Boolean aBoolean) {
-                        return toDo;
-                    }
-                }).subscribe(subscriber);
+                map(aBoolean -> toDo).subscribe(subscriber);
+
 
     }
 
